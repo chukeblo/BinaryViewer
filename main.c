@@ -8,6 +8,13 @@
 #define SUCCESS 1
 #define FAILURE 0
 
+#define FORWARD_COMMAND 'f'
+#define BACK_COMMAND 'b'
+#define HELP_COMMAND '\?'
+#define QUIT_COMMAND 'q'
+#define ENTER_KEY '\n'
+#define QUIT_VIEWER_MODE -1
+
 #define MAX_LINE 24
 #define PAGE (MAX_LINE * 16)
 
@@ -20,6 +27,23 @@ void disp_instruction() {
     return;
 }
 
+void wait_enter_key() {
+    int key = 0;
+    do {
+        key = getwchar();
+        rewind(stdin);
+    } while (key != ENTER_KEY); 
+}
+
+void show_help() {
+    printf("\'f\': forward page\n");
+    printf("\'b\': back page\n");
+    printf("\'q\': quit binary viewer\n");
+    printf("\'\?\': display this\n");
+    printf("press enter ... ");
+    wait_enter_key();
+}
+
 int viewer_mode(int address, int end_address) {
     int command = 0;
     while (1) {
@@ -27,33 +51,21 @@ int viewer_mode(int address, int end_address) {
         command = getchar();
         rewind(stdin);
         switch (command) {
-        case 'f':
+        case FORWARD_COMMAND:
             if (address + PAGE <= end_address) {
                 address += PAGE;
             }
             return address;
-
-        case 'b':
+        case BACK_COMMAND:
             if (address - PAGE >= 0) {
                 address -= PAGE;
             }
             return address;
-
-        case '\?':
-            printf("\'f\': forward page\n");
-            printf("\'b\': back page\n");
-            printf("\'q\': quit binview\n");
-            printf("\'\?\': display this\n");
-            printf("press enter ... ");
-            while(getchar() != '\n'){
-                rewind(stdin);
-            }
-            rewind(stdin);
+        case HELP_COMMAND:
+            show_help();
             break;
-        
-        case 'q':
-            return -1;
-
+        case QUIT_COMMAND:
+            return QUIT_VIEWER_MODE;
         default:
             break;
         }
@@ -94,7 +106,7 @@ void hex_dump(sHexDumpInfo* info) {
 
         if (info->viewer_mode == 1) {
             address = viewer_mode(top, info->end_address);
-            if (address == -1) {
+            if (address == QUIT_VIEWER_MODE) {
                 return;
             }
             rewind(info->file);
