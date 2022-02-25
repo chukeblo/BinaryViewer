@@ -60,57 +60,46 @@ int viewer_mode(int address, int end_address) {
     }
 }
 
-void hex_dump(FILE *fp, int begin_address, int end_address, int v_indicator) {
-    int address = begin_address - begin_address % 16;
-    int top = address;
-    int data;
-    int line = 0;
+void hex_dump(sHexDumpInfo* info) {
+    int address = info->begin_address - info->begin_address % 16;
 
-    while (address <= end_address) {
-        for (line = 0; line < MAX_LINE && address <= end_address; line++) {
-            char buff[16] = { 0 };
-            int i = 0;
-            for (i = 0; i < 16 && address <= end_address; i++) {
-                data = fgetc(fp);
-
-                if(i == 0){
+    while (address <= info->end_address) {
+        int top = address;
+        for (int line = 0; line < MAX_LINE && address <= info->end_address; line++) {
+            char buff[17] = { 0 };
+            int count = 0;
+            for (count = 0; count < 16 && address <= info->end_address; count++) {
+                if(count == 0){
                     printf("%08x: ", address);
                 }
 
-                if (address < begin_address) {
+                int data = fgetc(info->file);
+
+                if (address < info->begin_address) {
                     printf("   ");
-                    *(buff + i) = ' ';
+                    buff[count] = ' ';
                 } else {
                     printf("%02x ", (unsigned char)data);
-                    if (isprint(data)) {
-                        buff[i] = data;
-                    } else {
-                        buff[i] = '.';
-                    }
+                    buff[count] = isprint(data) ? data : '.';
                 }
                 address++;
             }
-            if (i < 15) {
-                for (int j = i; j < 16; j++) {
-                    printf("   ");
-                    buff[j] = ' ';
-                }
+            while (count++ < 16) {
+                printf("   ");
+                buff[count] = ' ';
             }
-            buff[16] = '\0';
+            buff[count] = '\0';
             printf("|%s\n", buff);
         }
 
-        if (v_indicator == 1) {
-            address = viewer_mode(top, end_address);
+        if (info->viewer_mode == 1) {
+            address = viewer_mode(top, info->end_address);
             if (address == -1) {
                 return;
             }
-            top = address;
-            rewind(fp);
-            address = 0;
-            while (address < top) {
-                data = fgetc(fp);
-                address++;
+            rewind(info->file);
+            for (int i = 0; i < address; i++) {
+                fgetc(info->file);
             }
         }
     }
@@ -184,7 +173,7 @@ int main(int argc, char *argv[]) {
     }
     
     if (info.begin_address < info.end_address) {
-        hex_dump(info.file, info.begin_address, info.end_address, info.viewer_mode);
+        hex_dump(&info);
     }
 
     fclose(info.file);
