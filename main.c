@@ -3,6 +3,11 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "HexDumpInfo.h"
+
+#define SUCCESS 1
+#define FAILURE 0
+
 #define MAX_LINE 24
 #define PAGE (MAX_LINE * 16)
 
@@ -112,59 +117,74 @@ void hex_dump(FILE *fp, int begin_address, int end_address, int v_indicator) {
     return;
 }
 
-int main(int argc, char *argv[]) {
-    FILE *fp = NULL;
-    char *fileName = NULL;
-    int begin_address = 0;
-    int end_address = -1;
-    int fileSize = 0;
-    int v_indicator = 0;
+int initialize(int argc, char* argv[], sHexDumpInfo* info) {
     const int filenameIndicator = '.';
+
+    info->file = NULL;
+    info->begin_address = 0;
+    info->end_address = -1;
+    info->file_size = 0;
+    info->viewer_mode = 0;
+
+    if (argc < 2 || argc > 5) {
+        printf("initialize() received invalid number of arguments: argc=%d\n", argc);
+        disp_instruction();
+        return FAILURE;
+    }
+
+    char* file_name = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
             if (argv[i][1] == 'b') {
-                sscanf(argv[i], "-b%X", &begin_address);
+                sscanf(argv[i], "-b%X", &info->begin_address);
             } else if (argv[i][1] == 'e') {
-                sscanf(argv[i], "-e%X", &end_address);
+                sscanf(argv[i], "-e%X", &info->end_address);
             } else if (argv[i][1] == 'v') {
-                v_indicator = 1;
+                info->viewer_mode = 1;
             } else {
-                printf("unspecified option: \"%s\"\n", argv[i]);
+                printf("initialize() received unsupported option: \"%s\"\n", argv[i]);
                 disp_instruction();
-                return -1;
+                return FAILURE;
             }
         } else if (strchr(argv[i], filenameIndicator) != NULL) {
-            fileName = argv[i];
+            file_name = argv[i];
         }
     }
 
-    if (fileName == NULL) {
+    if (file_name == NULL) {
         printf("ERROR: no filename has been input.\n");
         disp_instruction();
-        return -1;
-    } else if ((fp = fopen(fileName, "rb")) == NULL) {
-        printf("ERROR: the file failed to be opened.\n");
-        return -1;
+        return FAILURE;
+    } else if ((info->file = fopen(file_name, "rb")) == NULL) {
+        printf("initialize() failed to open file: file name=%s\n", file_name);
+        return FAILURE;
     }
 
-    fseek(fp, 0, SEEK_END);
-    fileSize = ftell(fp);
-    rewind(fp);
+    fseek(info->file, 0, SEEK_END);
+    info->file_size = ftell(info->file);
+    rewind(info->file);
 
-    if (end_address < 0 || end_address > fileSize) {
-        end_address = fileSize;
+    if (info->end_address < 0 || info->end_address > info->file_size) {
+        info->end_address = info->file_size;
     }
 
-    if (v_indicator == 1) {
-        begin_address = 0;
-        end_address = fileSize;
+    if (info->viewer_mode == 1) {
+        info->begin_address = 0;
+        info->end_address = info->file_size;
     }
+
+    return SUCCESS;
+}
+
+int main(int argc, char *argv[]) {
+    sHexDumpInfo info;
+    initialize(argc, argv, &info);
     
-    if (begin_address < end_address) {
-        hex_dump(fp, begin_address, end_address, v_indicator);
+    if (info.begin_address < info.end_address) {
+        hex_dump(info.file, info.begin_address, info.end_address, info.viewer_mode);
     }
 
-    fclose(fp);
+    fclose(info.file);
     return 0;
 }
