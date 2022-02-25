@@ -179,7 +179,9 @@ int initialize(int argc, char* argv[], sHexDumpInfo* info) {
 
 int main(int argc, char *argv[]) {
     sHexDumpInfo info;
-    initialize(argc, argv, &info);
+    if (initialize(argc, argv, &info) == FAILURE) {
+        return -1;
+    }
     
     if (info.begin_address < info.end_address) {
         hex_dump(info.file, info.begin_address, info.end_address, info.viewer_mode);
