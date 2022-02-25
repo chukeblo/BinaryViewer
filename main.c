@@ -8,6 +8,9 @@
 #define SUCCESS 1
 #define FAILURE 0
 
+#define VIEWER_MODE_ON 1
+#define VIEWER_MODE_OFF 0
+
 #define FORWARD_COMMAND 'f'
 #define BACK_COMMAND 'b'
 #define HELP_COMMAND '\?'
@@ -15,8 +18,9 @@
 #define ENTER_KEY '\n'
 #define QUIT_VIEWER_MODE -1
 
-#define MAX_LINE 24
-#define PAGE (MAX_LINE * 16)
+#define MAX_CHARS 16
+#define MAX_LINES 24
+#define PAGE (MAX_CHARS * MAX_LINES)
 
 void disp_instruction() {
     printf("usage: binview <filename> [-b<adress(hex)>] [-e<adress(hex)>] [-v]\n");
@@ -73,14 +77,14 @@ int viewer_mode(int address, int end_address) {
 }
 
 void hex_dump(sHexDumpInfo* info) {
-    int address = info->begin_address - info->begin_address % 16;
+    int address = info->begin_address - info->begin_address % MAX_CHARS;
 
     while (address <= info->end_address) {
         int top = address;
-        for (int line = 0; line < MAX_LINE && address <= info->end_address; line++) {
-            char buff[17] = { 0 };
+        for (int line = 0; line < MAX_LINES && address <= info->end_address; line++) {
+            char buff[MAX_CHARS + 1] = { 0 };
             int count = 0;
-            for (count = 0; count < 16 && address <= info->end_address; count++) {
+            for (count = 0; count < MAX_CHARS && address <= info->end_address; count++) {
                 if(count == 0){
                     printf("%08x: ", address);
                 }
@@ -96,7 +100,7 @@ void hex_dump(sHexDumpInfo* info) {
                 }
                 address++;
             }
-            while (count++ < 16) {
+            while (count++ < MAX_CHARS) {
                 printf("   ");
                 buff[count] = ' ';
             }
@@ -104,7 +108,7 @@ void hex_dump(sHexDumpInfo* info) {
             printf("|%s\n", buff);
         }
 
-        if (info->viewer_mode == 1) {
+        if (info->viewer_mode == VIEWER_MODE_ON) {
             address = viewer_mode(top, info->end_address);
             if (address == QUIT_VIEWER_MODE) {
                 return;
@@ -125,7 +129,7 @@ int initialize(int argc, char* argv[], sHexDumpInfo* info) {
     info->begin_address = 0;
     info->end_address = -1;
     info->file_size = 0;
-    info->viewer_mode = 0;
+    info->viewer_mode = VIEWER_MODE_OFF;
 
     if (argc < 2 || argc > 5) {
         printf("initialize() received invalid number of arguments: argc=%d\n", argc);
@@ -142,7 +146,7 @@ int initialize(int argc, char* argv[], sHexDumpInfo* info) {
             } else if (argv[i][1] == 'e') {
                 sscanf(argv[i], "-e%X", &info->end_address);
             } else if (argv[i][1] == 'v') {
-                info->viewer_mode = 1;
+                info->viewer_mode = VIEWER_MODE_ON;
             } else {
                 printf("initialize() received unsupported option: \"%s\"\n", argv[i]);
                 disp_instruction();
@@ -170,7 +174,7 @@ int initialize(int argc, char* argv[], sHexDumpInfo* info) {
         info->end_address = info->file_size;
     }
 
-    if (info->viewer_mode == 1) {
+    if (info->viewer_mode == VIEWER_MODE_ON) {
         info->begin_address = 0;
         info->end_address = info->file_size;
     }
