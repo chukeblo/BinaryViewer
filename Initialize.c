@@ -5,6 +5,12 @@
 
 #include "BinaryViewer.h"
 
+#define OPTION_PREFIX '-'
+#define BEGIN_ADDRESS_OPTION 'b'
+#define END_ADDRESS_OPTION 'e'
+#define VIEWER_MODE_OPTION 'v'
+#define FILE_NAME_INDICATOR '.'
+
 static void disp_instruction() {
     printf("usage: binview <filename> [-b<adress(hex)>] [-e<adress(hex)>] [-v]\n");
     printf("  <filename>  ... input filename\n");
@@ -15,8 +21,6 @@ static void disp_instruction() {
 }
 
 int initialize(int argc, char* argv[], sHexDumpInfo* info) {
-    const int filenameIndicator = '.';
-
     info->file = NULL;
     info->begin_address = 0;
     info->end_address = -1;
@@ -32,19 +36,19 @@ int initialize(int argc, char* argv[], sHexDumpInfo* info) {
     char* file_name = NULL;
 
     for (int i = 1; i < argc; i++) {
-        if (argv[i][0] == '-') {
-            if (argv[i][1] == 'b') {
+        if (argv[i][0] == OPTION_PREFIX) {
+            if (argv[i][1] == BEGIN_ADDRESS_OPTION) {
                 sscanf(argv[i], "-b%X", &info->begin_address);
-            } else if (argv[i][1] == 'e') {
+            } else if (argv[i][1] == END_ADDRESS_OPTION) {
                 sscanf(argv[i], "-e%X", &info->end_address);
-            } else if (argv[i][1] == 'v') {
+            } else if (argv[i][1] == VIEWER_MODE_OPTION) {
                 info->viewer_mode = VIEWER_MODE_ON;
             } else {
                 printf("initialize() received unsupported option: \"%s\"\n", argv[i]);
                 disp_instruction();
                 return FAILURE;
             }
-        } else if (strchr(argv[i], filenameIndicator) != NULL) {
+        } else if (strchr(argv[i], FILE_NAME_INDICATOR) != NULL) {
             file_name = argv[i];
         }
     }
