@@ -20,6 +20,28 @@ static void disp_instruction() {
     return;
 }
 
+int interpret_console_input(int argc, char* argv[], sHexDumpInfo* info, char** file_name) {
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == OPTION_PREFIX) {
+            if (argv[i][1] == BEGIN_ADDRESS_OPTION) {
+                sscanf(argv[i], "-b%X", &info->begin_address);
+            } else if (argv[i][1] == END_ADDRESS_OPTION) {
+                sscanf(argv[i], "-e%X", &info->end_address);
+            } else if (argv[i][1] == VIEWER_MODE_OPTION) {
+                info->viewer_mode = VIEWER_MODE_ON;
+            } else {
+                printf("interpret_console_input() received unsupported option: \"%s\"\n", argv[i]);
+                disp_instruction();
+                return FAILURE;
+            }
+        } else if (strchr(argv[i], FILE_NAME_INDICATOR) != NULL) {
+            *file_name = argv[i];
+            printf("file_name = %s\n", *file_name);
+        }
+    }
+    return SUCCESS;
+}
+
 static void initialize_hex_dump_info(sHexDumpInfo* info) {
     info->file = NULL;
     info->begin_address = 0;
@@ -38,27 +60,12 @@ int initialize(int argc, char* argv[], sHexDumpInfo* info) {
     }
 
     char* file_name = NULL;
-
-    for (int i = 1; i < argc; i++) {
-        if (argv[i][0] == OPTION_PREFIX) {
-            if (argv[i][1] == BEGIN_ADDRESS_OPTION) {
-                sscanf(argv[i], "-b%X", &info->begin_address);
-            } else if (argv[i][1] == END_ADDRESS_OPTION) {
-                sscanf(argv[i], "-e%X", &info->end_address);
-            } else if (argv[i][1] == VIEWER_MODE_OPTION) {
-                info->viewer_mode = VIEWER_MODE_ON;
-            } else {
-                printf("initialize() received unsupported option: \"%s\"\n", argv[i]);
-                disp_instruction();
-                return FAILURE;
-            }
-        } else if (strchr(argv[i], FILE_NAME_INDICATOR) != NULL) {
-            file_name = argv[i];
-        }
+    if (interpret_console_input(argc, argv, info, &file_name) == FAILURE) {
+        return FAILURE;
     }
 
     if (file_name == NULL) {
-        printf("ERROR: no filename has been input.\n");
+        printf("initialize() failed to get file name to be opened\n");
         disp_instruction();
         return FAILURE;
     } else if ((info->file = fopen(file_name, "rb")) == NULL) {
