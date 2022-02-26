@@ -20,12 +20,16 @@ static void disp_instruction() {
     return;
 }
 
-int initialize(int argc, char* argv[], sHexDumpInfo* info) {
+static void initialize_hex_dump_info(sHexDumpInfo* info) {
     info->file = NULL;
     info->begin_address = 0;
     info->end_address = -1;
     info->file_size = 0;
     info->viewer_mode = VIEWER_MODE_OFF;
+}
+
+int initialize(int argc, char* argv[], sHexDumpInfo* info) {
+    initialize_hex_dump_info(info);
 
     if (argc < 2 || argc > 5) {
         printf("initialize() received invalid number of arguments: argc=%d\n", argc);
