@@ -77,6 +77,10 @@ int initialize(int argc, char* argv[], sHexDumpInfo* info) {
     info->file_size = ftell(info->file);
     rewind(info->file);
 
+    if (info->begin_address > info->file_size) {
+        info->begin_address = 0;
+    }
+
     if (info->end_address < 0 || info->end_address > info->file_size) {
         info->end_address = info->file_size;
     }
